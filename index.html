@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cinematic Storyboard Generator</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        .character-card, .scene-card, .frame-card {
+            transition: all 0.3s ease;
+        }
+        .character-card:hover, .scene-card:hover, .frame-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .loading-spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #timeline {
+            scrollbar-width: thin;
+            scrollbar-color: #4B5563 #1F2937;
+        }
+        #timeline::-webkit-scrollbar {
+            height: 8px;
+        }
+        #timeline::-webkit-scrollbar-track {
+            background: #1F2937;
+        }
+        #timeline::-webkit-scrollbar-thumb {
+            background-color: #4B5563;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-blue-400 mb-2 animate__animated animate__fadeIn">Cinematic Storyboard Generator</h1>
+            <p class="text-xl text-gray-300">Create professional storyboards with consistent characters and scenes</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Story Setup Section -->
+            <div class="bg-gray-800 rounded-lg p-6 shadow-xl col-span-1">
+                <h2 class="text-2xl font-semibold mb-4 text-blue-300">1. Story Setup</h2>
+                
+                <div class="mb-4">
+                    <label class="block text-gray-300 mb-2">Story Title</label>
+                    <input type="text" id="storyTitle" class="w-full px-4 py-2 bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-300 mb-2">Genre</label>
+                        <select id="storyGenre" class="w-full px-4 py-2 bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="fantasy">Fantasy</option>
+                            <option value="sci-fi">Sci-Fi</option>
+                            <option value="action">Action</option>
+                            <option value="drama">Drama</option>
+                            <option value="comedy">Comedy</option>
+                            <option value="horror">Horror</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-300 mb-2">Theme</label>
+                        <input type="text" id="storyTheme" class="w-full px-4 py-2 bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-300 mb-2">Main Characters</label>
+                        <input type="number" id="mainCharacters" min="1" max="5" value="1" class="w-full px-4 py-2 bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-gray-300 mb-2">Secondary Characters</label>
+                        <input type="number" id="secondaryCharacters" min="0" max="5" value="0" class="w-full px-4 py-2 bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-gray-300 mb-2">Art Style</label>
+                        <select id="artStyle" class="w-full px-4 py-2 bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="photorealistic">Photorealistic</option>
+                            <option value="3d rendered">3D Rendered</option>
+                            <option value="comic book">Comic Book</option>
+                            <option value="anime">Anime</option>
+                            <option value="watercolor">Watercolor</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-300 mb-2">Camera Style</label>
+                        <select id="cameraStyle" class="w-full px-4 py-2 bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="cinematic">Cinematic</option>
+                            <option value="documentary">Documentary</option>
+                            <option value="handheld">Handheld</option>
+                            <option value="static">Static</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button id="saveStorySetup" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded transition duration-300">
+                    Save Story Setup
+                </button>
+            </div>
+
+            <!-- Character Creation Section -->
+            <div class="bg-gray-800 rounded-lg p-6 shadow-xl col-span-1">
+                <h2 class="text-2xl font-semibold mb-4 text-blue-300">2. Character Creation</h2>
+                
+                <div id="characterForms" class="mb-4">
+                    <!-- Dynamic forms will be added here based on mainCharacters count -->
+                </div>
+                
+                <div id="secondaryCharacterForms" class="mb-4">
+                    <!-- Dynamic forms for secondary characters -->
+                </div>
+                
+                <div id="characterGallery" class="mt-6 grid grid-cols-2 gap-4">
+                    <!-- Generated characters will appear here -->
+                </div>
+            </div>
+
+            <!-- Scene Creation Section -->
+            <div class="bg-gray-800 rounded-lg p-6 shadow-xl col-span-1">
+                <h2 class="text-2xl font-semibold mb-4 text-blue-300">3. Scene Creation</h2>
+                
+                <div class="mb-4">
+                    <label class="block text-gray-300 mb-2">Scene Name</label>
+                    <input type="text" id="sceneName" class="w-full px-4 py-2 bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-gray-300 mb-2">Scene Description</label>
+                    <textarea id="sceneDescription" rows="3" class="w-full px-4 py-2 bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-gray-300 mb-2">Time of Day</label>
+                        <select id="sceneTime" class="w-full px-4 py-2 bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="day">Day</option>
+                            <option value="night">Night</option>
+                            <option value="sunrise">Sunrise</option>
+                            <option value="sunset">Sunset</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-gray-300 mb-2">Lighting</label>
+                            <select id="sceneLighting" class="w-full px-4 py-2 bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="natural">Natural</option>
+                            <option value="dramatic">Dramatic</option>
+                            <option value="warm">Warm</option>
+                            <option value="cold">Cold</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button id="generateScene" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded transition duration-300">
+                    Generate Scene
+                </button>
+                
+                <div id="sceneGallery" class="mt-6 grid grid-cols-1 gap-4">
+                    <!-- Generated scenes will appear here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Frame Generation Section -->
+        <div class="bg-gray-800 rounded-lg p-6 shadow-xl mt-8">
+            <h2 class="text-2xl font-semibold mb-4 text-blue-300">4. Frame Generation</h2>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="col-span-1">
+                    <div class="mb-4">
+                        <label class="block text-gray-300 mb-2">Select Scene</label>
+                        <select id="frameScene" class="w-full px-4 py-2 bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <!-- Scenes will be populated here -->
+                        </select>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-gray-300 mb-2">Frame Description</label>
+                        <textarea id="frameDescription" rows="3" class="w-full px-4 py-2 bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-gray-300 mb-2">Camera Angle</label>
+                        <select id="cameraAngle" class="w-full px-4 py-2 bg-gray-700 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="wide">Wide Shot</option>
+                            <option value="medium">Medium Shot</option>
+                            <option value="close">Close-up</option>
+                            <option value="extreme close">Extreme Close-up</option>
+                        </select>
+                    </div>
+                    
+                    <div id="characterSelection" class="mb-6">
+                        <!-- Character checkboxes will be added here -->
+                    </div>
+                    
+                    <button id="generateFrame" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded transition duration-300">
+                        Generate Frame
+                    </button>
+                </div>
+                
+                <div class="col-span-2">
+                    <h3 class="text-xl font-semibold mb-4 text-blue-300">Storyboard Timeline</h3>
+                    <div id="timeline" class="flex overflow-x-auto pb-4 gap-4">
+                        <!-- Generated frames will appear here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Video Generation Section -->
+        <div class="bg-gray-800 rounded-lg p-6 shadow-xl mt-8">
+            <h2 class="text-2xl font-semibold mb-4 text-blue-300">5. Video Generation</h2>
+            
+            <div class="flex flex-col items-center">
+                <button id="generateVideo" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 mb-4">
+                    Generate Final Video (8 seconds)
+                </button>
+                
+                <div id="videoContainer" class="w-full max-w-2xl mt-4 hidden">
+                    <video id="finalVideo" controls class="w-full rounded-lg shadow-lg"></video>
+                    <div class="mt-4 flex justify-center gap-4">
+                        <button id="downloadVideo" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition duration-300">
+                            Download Video
+                        </button>
+                        <button id="downloadReport" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded transition duration-300">
+                            Download Full Report
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="videoLoading" class="mt-8 hidden">
+                    <div class="loading-spinner mb-4"></div>
+                    <p class="text-gray-300">Generating your cinematic masterpiece...</p>
+                    <p class="text-sm text-gray-400">This may take a few minutes</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Story Flow Visualization -->
+        <div class="bg-gray-800 rounded-lg p-6 shadow-xl mt-8">
+            <h2 class="text-2xl font-semibold mb-4 text-blue-300">Story Flow</h2>
+            <div class="mermaid">
+                <!-- Mermaid diagram will be rendered here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Modal -->
+    <div id="loadingModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
+        <div class="bg-gray-800 p-8 rounded-lg max-w-md text-center">
+            <div class="loading-spinner mx-auto mb-4"></div>
+            <h3 class="text-xl font-semibold mb-2" id="loadingTitle">Generating Content</h3>
+            <p class="text-gray-300 mb-4" id="loadingMessage">Please wait while we create your content...</p>
+            <div class="w-full bg-gray-700 rounded-full h-2.5">
+                <div id="loadingProgress" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Mermaid
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'dark',
+            flowchart: {
+                useMaxWidth: false,
+                htmlLabels: true,
+                curve: 'basis'
+            }
+        });
+
+        // Global variables
+        let storyData = {
+            title: '',
+            genre: '',
+            theme: '',
+            mainCharacters: 1,
+            secondaryCharacters: 0,
+            artStyle: '',
+            cameraStyle: ''
+        };
+        
+        let characters = [];
+        let scenes = [];
+        let frames = [];
+        
+        // DOM Elements
+        const saveStorySetupBtn = document.getElementById('saveStorySetup');
+        const characterFormsDiv = document.getElementById('characterForms');
+        const secondaryCharacterFormsDiv = document.getElementById('secondaryCharacterForms');
+        const characterGalleryDiv = document.getElementById('characterGallery');
+        const generateSceneBtn = document.getElementById('generateScene');
+        const sceneGalleryDiv = document.getElementById('sceneGallery');
+        const frameSceneSelect = document.getElementById('frameScene');
+        const characterSelectionDiv = document.getElementById('characterSelection');
+        const generateFrameBtn = document.getElementById('generateFrame');
+        const timelineDiv = document.getElementById('timeline');
+        const generateVideoBtn = document.getElementById('generateVideo');
+        const videoContainerDiv = document.getElementById('videoContainer');
+        const finalVideoElement = document.getElementById('finalVideo');
+        const videoLoadingDiv = document.getElementById('videoLoading');
+        const downloadVideoBtn = document.getElementById('downloadVideo');
+        const downloadReportBtn = document.getElementById('downloadReport');
+        const loadingModal = document.getElementById('loadingModal');
+        const loadingTitle = document.getElementById('loadingTitle');
+        const loadingMessage = document.getElementById('loadingMessage');
+        const loadingProgress = document.getElementById('loadingProgress');
+        
+        // Event Listeners
+        saveStorySetupBtn.addEventListener('click', saveStorySetup);
+        generateSceneBtn.addEventListener('click', generateScene);
+        generateFrameBtn.addEventListener('click', generateFrame);
+        generateVideoBtn.addEventListener('click', generateFinalVideo);
+        downloadVideoBtn.addEventListener('click', downloadVideo);
+        downloadReportBtn.addEventListener('click', downloadReport);
+        
+        // Initialize character forms based on default values
+        updateCharacterForms();
+        
+        // Functions
+        function showLoading(title, message) {
+            loadingTitle.textContent = title;
+            loadingMessage.textContent = message;
+            loadingProgress.style.width = '0%';
+            loadingModal.classList.remove('hidden');
+        }
+        
+        function updateLoadingProgress(percent) {
+            loadingProgress.style.width = `${percent}%`;
+        }
+        
+        function hideLoading() {
+            loadingModal.classList.add('hidden');
+        }
+        
+        function saveStorySetup() {
+            storyData = {
+                title: document.getElementById('storyTitle').value,
+                genre: document.getElementById('storyGenre').value,
+                theme: document.getElementById('storyTheme').value,
+                mainCharacters: parseInt(document.getElementById('mainCharacters').value),
+                secondaryCharacters: parseInt(document.getElementById('secondaryCharacters').value),
+                artStyle: document.getElementById('artStyle').value,
+                cameraStyle: document.getElementById('cameraStyle').value
+            };
+            
+            // Update character forms based on new counts
+            updateCharacterForms();
+            
+            // Save to server
+            fetch('/setup_story', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    story_title: storyData.title,
+                    story_genre: storyData.genre,
+                    story_theme: storyData.theme,
+                    main_characters: storyData.mainCharacters,
+                    secondary_characters: storyData.secondaryCharacters,
+                    art_style: storyData.artStyle,
+                    camera_style: storyData.cameraStyle
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Story setup saved successfully!');
+                } else {
+                    alert('Error saving story setup');
+                }
+            });
+        }
+        
+        function updateCharacterForms() {
+            // Clear existing forms
+            characterFormsDiv.innerHTML = '';
+            secondaryCharacterFormsDiv.innerHTML = '';
+            
+            // Create forms for main characters
+            for (let i = 0; i < storyData.mainCharacters; i++) {
+                const formDiv = document.createElement('div');
+                formDiv.className = 'bg-gray-700 p-4 rounded-lg mb-4';
+                formDiv.innerHTML = `
+                    <h3 class="text-lg font-medium mb-2 text-blue-300">Main Character ${i+1}</h3>
+                    <div class="mb-2">
+                        <label class="block text-gray-300 mb-1">Name</label>
+                        <input type="text" class="character-name w-full px-3 py-1 bg-gray-600 rounded">
+                    </div>
+                    <div class="mb-2">
+                        <label class="block text-gray-300 mb-1">Type</label>
+                        <input type="text" class="character-type w-full px-3 py-1 bg-gray-600 rounded" placeholder="e.g., Hero, Villain">
+                    </div>
+                    <div class="mb-2">
+                        <label class="block text-gray-300 mb-1">Description</label>
+                        <textarea class="character-description w-full px-3 py-1 bg-gray-600 rounded" rows="2" placeholder="Physical appearance, personality"></textarea>
+                    </div>
+                    <div class="mb-2">
+                        <label class="block text-gray-300 mb-1">Outfit</label>
+                        <textarea class="character-outfit w-full px-3 py-1 bg-gray-600 rounded" rows="2" placeholder="Clothing, accessories"></textarea>
+                    </div>
+                    <button class="generate-character bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm transition duration-300" data-character-type="main">
+                        Generate Character
+                    </button>
+                `;
+                characterFormsDiv.appendChild(formDiv);
+            }
+            
+            // Create forms for secondary characters
+            for (let i = 0; i < storyData.secondaryCharacters; i++) {
+                const formDiv = document.createElement('div');
+                formDiv.className = 'bg-gray-700 p-4 rounded-lg mb-4';
+                formDiv.innerHTML = `
+                    <h3 class="text-lg font-medium mb-2 text-blue-300">Secondary Character ${i+1}</h3>
+                    <div class="mb-2">
+                        <label class="block text-gray-300 mb-1">Name</label>
+                        <input type="text" class="character-name w-full px-3 py-1 bg-gray-600 rounded">
+                    </div>
+                    <div class="mb-2">
+                        <label class="block text-gray-300 mb-1">Type</label>
+                        <input type="text" class="character-type w-full px-3 py-1 bg-gray-600 rounded" placeholder="e.g., Sidekick, Merchant">
+                    </div>
+                    <div class="mb-2">
+                        <label class="block text-gray-300 mb-1">Description</label>
+                        <textarea class="character-description w-full px-3 py-1 bg-gray-600 rounded" rows="2" placeholder="Physical appearance, personality"></textarea>
+                    </div>
+                    <div class="mb-2">
+                        <label class="block text-gray-300 mb-1">Outfit</label>
+                        <textarea class="character-outfit w-full px-3 py-1 bg-gray-600 rounded" rows="2" placeholder="Clothing, accessories"></textarea>
+                    </div>
+                    <button class="generate-character bg-blue-600 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm transition duration-300" data-character-type="secondary">
+                        Generate Character
+                    </button>
+                `;
+                secondaryCharacterFormsDiv.appendChild(formDiv);
+            }
+            
+            // Add event listeners to all generate buttons
+            document.querySelectorAll('.generate-character').forEach(button => {
+                button.addEventListener('click', function() {
+                    const formDiv = this.parentElement;
+                    const characterType = this.getAttribute('data-character-type');
+                    const name = formDiv.querySelector('.character-name').value;
+                    const type = formDiv.querySelector('.character-type').value;
+                    const description = formDiv.querySelector('.character-description').value;
+                    const outfit = formDiv.querySelector('.character-outfit').value;
+                    
+                    if (!name || !type || !description || !outfit) {
+                        alert('Please fill all character details');
+                        return;
+                    }
+                    
+                    generateCharacter(name, type, description, outfit, characterType);
+                });
+            });
+        }
+        
+        function generateCharacter(name, type, description, outfit, characterType) {
+            showLoading('Generating Character', `Creating ${name} the ${type}`);
+            
+            fetch('/generate_character', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    character_type: characterType,
+                    character_name: name,
+                    character_description: description,
+                    character_outfit: outfit,
+                    character_expression: 'neutral'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Add character to gallery
+                    addCharacterToGallery(data.character_data, data.image_url);
+                    updateCharacterSelection();
+                    updateSceneSelect();
+                    hideLoading();
+                } else {
+                    alert('Error generating character');
+                    hideLoading();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                hideLoading();
+            });
+        }
+        
+        function addCharacterToGallery(characterData, imageUrl) {
+            const characterCard = document.createElement('div');
+            characterCard.className = 'character-card bg-gray-700 rounded-lg overflow-hidden';
+            characterCard.innerHTML = `
+                <img src="${imageUrl}" alt="${characterData.name}" class="w-full h-32 object-cover">
+                <div class="p-3">
+                    <h4 class="font-semibold">${characterData.name}</h4>
+                    <p class="text-sm text-gray-400">${characterData.type}</p>
+                </div>
+            `;
+            characterGalleryDiv.appendChild(characterCard);
+            
+            // Add to characters array
+            characters.push({
+                id: characterData.character_id,
+                name: characterData.name,
+                type: characterData.type,
+                imageUrl: imageUrl
+            });
+        }
+        
+        function generateScene() {
+            const name = document.getElementById('sceneName').value;
+            const description = document.getElementById('sceneDescription').value;
+            const time = document.getElementById('sceneTime').value;
+            const lighting = document.getElementById('sceneLighting').value;
+            
+            if (!name || !description) {
+                alert('Please fill all scene details');
+                return;
+            }
+            
+            showLoading('Generating Scene', `Creating ${name} scene`);
+            
+            fetch('/generate_scene', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    scene_name: name,
+                    scene_description: description,
+                    scene_time: time,
+                    scene_lighting: lighting
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Add scene to gallery
+                    addSceneToGallery(data.scene_data, data.image_url);
+                    updateSceneSelect();
+                    hideLoading();
+                } else {
+                    alert('Error generating scene');
+                    hideLoading();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                hideLoading();
+            });
+        }
+        
+        function addSceneToGallery(sceneData, imageUrl) {
+            const sceneCard = document.createElement('div');
+            sceneCard.className = 'scene-card bg-gray-700 rounded-lg overflow-hidden';
+            sceneCard.innerHTML = `
+                <img src="${imageUrl}" alt="${sceneData.name}" class="w-full h-48 object-cover">
+                <div class="p-3">
+                    <h4 class="font-semibold">${sceneData.name}</h4>
+                    <p class="text-sm text-gray-400">${sceneData.time}, ${sceneData.lighting} lighting</p>
+                    <p class="text-sm mt-1">${sceneData.description}</p>
+                </div>
+            `;
+            sceneGalleryDiv.appendChild(sceneCard);
+            
+            // Add to scenes array
+            scenes.push({
+                id: sceneData.scene_id,
+                name: sceneData.name,
+                imageUrl: imageUrl
+            });
+        }
+        
+        function updateSceneSelect() {
+            frameSceneSelect.innerHTML = '';
+            
+            if (scenes.length === 0) {
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'No scenes available';
+                frameSceneSelect.appendChild(option);
+                return;
+            }
+            
+            scenes.forEach(scene => {
+                const option = document.createElement('option');
+                option.value = scene.id;
+                option.textContent = scene.name;
+                frameSceneSelect.appendChild(option);
+            });
+        }
+        
+        function updateCharacterSelection() {
+            characterSelectionDiv.innerHTML = '<h3 class="text-lg font-medium mb-2 text-blue-300">Characters in Frame</h3>';
+            
+            if (characters.length === 0) {
+                characterSelectionDiv.innerHTML += '<p class="text-gray-400">No characters available</p>';
+                return;
+            }
+            
+            characters.forEach((character, index) => {
+                const characterDiv = document.createElement('div');
+                characterDiv.className = 'mb-3';
+                characterDiv.innerHTML = `
+                    <div class="flex items-center mb-1">
+                        <input type="checkbox" id="char-${index}" class="character-checkbox mr-2" value="${character.id}">
+                        <label for="char-${index}" class="text-gray-300">${character.name} (${character.type})</label>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 ml-6">
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Expression</label>
+                            <select class="character-expression w-full px-2 py-1 bg-gray-600 rounded text-sm" data-character-id="${character.id}">
+                                <option value="neutral">Neutral</option>
+                                <option value="happy">Happy</option>
+                                <option value="angry">Angry</option>
+                                <option value="sad">Sad</option>
+                                <option value="surprised">Surprised</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Position</label>
+                            <select class="character-position w-full px-2 py-1 bg-gray-600 rounded text-sm" data-character-id="${character.id}">
+                                <option value="center">Center</option>
+                                <option value="left">Left</option>
+                                <option value="right">Right</option>
+                                <option value="background">Background</option>
+                                <option value="foreground">Foreground</option>
+                            </select>
+                        </div>
+                    </div>
+                `;
+                characterSelectionDiv.appendChild(characterDiv);
+            });
+        }
+        
+        function generateFrame() {
+            const sceneId = frameSceneSelect.value;
+            const description = document.getElementById('frameDescription').value;
+            const cameraAngle = document.getElementById('cameraAngle').value;
+            
+            if (!sceneId || !description) {
+                alert('Please select a scene and enter description');
+                return;
+            }
+            
+            // Get selected characters
+            const selectedCharacters = [];
+            const characterCheckboxes = document.querySelectorAll('.character-checkbox:checked');
+            
+            if (characterCheckboxes.length === 0) {
+                alert('Please select at least one character');
+                return;
+            }
+            
+            characterCheckboxes.forEach(checkbox => {
+                const characterId = checkbox.value;
+                const expression = document.querySelector(`.character-expression[data-character-id="${characterId}"]`).value;
+                const position = document.querySelector(`.character-position[data-character-id="${characterId}"]`).value;
+                
+                selectedCharacters.push({
+                    id: characterId,
+                    expression: expression,
+                    position: position
+                });
+            });
+            
+            showLoading('Generating Frame', 'Creating storyboard frame');
+            
+            // Prepare form data
+            const formData = new FormData();
+            formData.append('frame_description', description);
+            formData.append('scene_id', sceneId);
+            formData.append('camera_angle', cameraAngle);
+            
+            selectedCharacters.forEach(char => {
+                formData.append('character_ids[]', char.id);
+                formData.append('character_expressions[]', char.expression);
+                formData.append('character_positions[]', char.position);
+            });
+            
+            fetch('/generate_frame', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Add frame to timeline
+                    addFrameToTimeline(data.frame_data, data.image_url);
+                    updateMermaidDiagram();
+                    hideLoading();
+                } else {
+                    alert('Error generating frame');
+                    hideLoading();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                hideLoading();
+            });
+        }
+        
+        function addFrameToTimeline(frameData, imageUrl) {
+            const frameCard = document.createElement('div');
+            frameCard.className = 'frame-card flex-shrink-0 w-64 bg-gray-700 rounded-lg overflow-hidden';
+            frameCard.innerHTML = `
+                <div class="relative">
+                    <img src="${imageUrl}" alt="Frame ${frames.length + 1}" class="w-full h-36 object-cover">
+                    <span class="absolute top-2 left-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">Frame ${frames.length + 1}</span>
+                </div>
+                <div class="p-3">
+                    <h4 class="font-semibold text-sm truncate">${frameData.description}</h4>
+                    <p class="text-xs text-gray-400 mt-1">${getSceneName(frameData.scene_id)}</p>
+                </div>
+            `;
+            timelineDiv.appendChild(frameCard);
+            
+            // Add to frames array
+            frames.push({
+                id: frameData.frame_id,
+                description: frameData.description,
+                sceneId: frameData.scene_id,
+                imageUrl: imageUrl,
+                order: frameData.order
+            });
+        }
+        
+        function getSceneName(sceneId) {
+            const scene = scenes.find(s => s.id === sceneId);
+            return scene ? scene.name : 'Unknown Scene';
+        }
+        
+        function generateFinalVideo() {
+            if (frames.length === 0) {
+                alert('Please generate at least one frame first');
+                return;
+            }
+            
+            showLoading('Generating Video', 'Creating your 8-second cinematic video');
+            videoLoadingDiv.classList.remove('hidden');
+            
+            fetch('/generate_video', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    videoContainerDiv.classList.remove('hidden');
+                    videoLoadingDiv.classList.add('hidden');
+                    finalVideoElement.src = data.video_url;
+                    
+                    // Update mermaid diagram with video info
+                    updateMermaidDiagram();
+                } else {
+                    alert('Error generating video');
+                    videoLoadingDiv.classList.add('hidden');
+                }
+                hideLoading();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                videoLoadingDiv.classList.add('hidden');
+                hideLoading();
+            });
+        }
+        
+        function downloadVideo() {
+            if (!finalVideoElement.src) {
+                alert('No video available to download');
+                return;
+            }
+            
+            const link = document.createElement('a');
+            link.href = finalVideoElement.src;
+            link.download = 'cinematic_story.mp4';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        function downloadReport() {
+            fetch('/download_report')
+            .then(response => response.blob())
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'storyboard_report.json';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            });
+        }
+        
+        function updateMermaidDiagram() {
+            let mermaidCode = `graph TD\n`;
+            mermaidCode += `    A["${storyData.title}"] --> B["Genre: ${storyData.genre}"]\n`;
+            mermaidCode += `    A --> C["Theme: ${storyData.theme}"]\n`;
+            mermaidCode += `    A --> D["Art Style: ${storyData.artStyle}"]\n`;
+            mermaidCode += `    A --> E["Camera Style: ${storyData.cameraStyle}"]\n\n`;
+            
+            // Add characters
+            mermaidCode += `    subgraph Characters\n`;
+            characters.forEach((char, index) => {
+                mermaidCode += `        character${index}["${char.name} (${char.type})"]\n`;
+            });
+            mermaidCode += `    end\n\n`;
+            
+            // Add scenes
+            mermaidCode += `    subgraph Scenes\n`;
+            scenes.forEach((scene, index) => {
+                mermaidCode += `        scene${index}["${scene.name}"]\n`;
+            });
+            mermaidCode += `    end\n\n`;
+            
+            // Add frames
+            if (frames.length > 0) {
+                mermaidCode += `    subgraph Storyboard[Storyboard Frames]\n`;
+                frames.forEach((frame, index) => {
+                    mermaidCode += `        frame${index}["Frame ${index+1}: ${frame.description.substring(0, 20)}..."]\n`;
+                });
+                mermaidCode += `    end\n\n`;
+            }
+            
+            // Add video if available
+            if (finalVideoElement.src) {
+                mermaidCode += `    FinalVideo["Final 8-Second Video"]\n`;
+            }
+            
+            // Render the diagram
+            const mermaidDiv = document.querySelector('.mermaid');
+            mermaidDiv.innerHTML = mermaidCode;
+            mermaid.init(undefined, mermaidDiv);
+        }
+        
+        // Initial mermaid diagram
+        updateMermaidDiagram();
+    </script>
+</body>
+</html>
