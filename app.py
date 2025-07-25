@@ -11,11 +11,9 @@ import base64
 import time
 import uuid
 import json
-from typing import List, Dict
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
 import requests
 from pathlib import Path
+from typing import List, Dict
 
 app = FastAPI()
 
@@ -23,10 +21,9 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), "static")
 templates = Jinja2Templates(directory="templates")
 
-# Initialize Gemini client
-client = genai.Client(
-    api_key=os.environ.get('GEMINI_BILLING_ACCOUNT', None),
-)
+# Initialize Gemini client with API key
+GEMINI_API_KEY = os.getenv("GEMINI_BILLING_ACCOUNT")
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 # Global storage for generated assets
 GENERATED_ASSETS = {
@@ -57,7 +54,6 @@ async def setup_story(
     art_style: str = Form(...),
     camera_style: str = Form(...)
 ):
-    # Store basic story info
     GENERATED_ASSETS["storyline"] = {
         "title": story_title,
         "genre": story_genre,
@@ -78,7 +74,6 @@ async def generate_character(
     character_outfit: str = Form(...),
     character_expression: str = Form("neutral")
 ):
-    # Generate character reference image
     prompt = f"""
     Generate a full-body reference image of a {character_type} character named {character_name} for our story.
     Character details: {character_description}
@@ -87,10 +82,11 @@ async def generate_character(
     Art style: {GENERATED_ASSETS["storyline"]["art_style"]}
     Camera style: {GENERATED_ASSETS["storyline"]["camera_style"]} - full body shot
     
-    Important: This will be used as reference for all future frames, so ensure:
+    Important requirements:
     - Consistent proportions and features
     - Distinctive visual elements that can be recognized in other scenes
     - Neutral pose that shows all important features
+    - High resolution and detailed
     """
     
     response = client.models.generate_content(
@@ -101,7 +97,6 @@ async def generate_character(
         )
     )
     
-    # Save character image
     character_id = str(uuid.uuid4())
     for part in response.candidates[0].content.parts:
         if part.inline_data is not None:
@@ -109,7 +104,6 @@ async def generate_character(
             filename = f"static/characters/{character_id}.png"
             image.save(filename)
             
-            # Store character data
             GENERATED_ASSETS["characters"][character_id] = {
                 "name": character_name,
                 "type": character_type,
@@ -135,20 +129,20 @@ async def generate_scene(
     scene_time: str = Form("day"),
     scene_lighting: str = Form("natural")
 ):
-    # Generate scene reference image
     prompt = f"""
-    Generate a establishing shot of the scene: {scene_name}
+    Generate an establishing shot of the scene: {scene_name}
     Scene details: {scene_description}
     Time of day: {scene_time}
     Lighting: {scene_lighting}
     Art style: {GENERATED_ASSETS["storyline"]["art_style"]}
     Camera style: {GENERATED_ASSETS["storyline"]["camera_style"]} - wide establishing shot
     
-    Important: This will be used as reference for all future frames in this scene, so ensure:
+    Important requirements:
     - Consistent environment details
     - Clear landmarks that can be recognized in other shots
     - Proper lighting that matches the time of day
-    - No characters in this shot (just the environment)
+    - No characters in this shot
+    - High resolution and detailed
     """
     
     response = client.models.generate_content(
@@ -159,7 +153,6 @@ async def generate_scene(
         )
     )
     
-    # Save scene image
     scene_id = str(uuid.uuid4())
     for part in response.candidates[0].content.parts:
         if part.inline_data is not None:
@@ -167,7 +160,6 @@ async def generate_scene(
             filename = f"static/scenes/{scene_id}.png"
             image.save(filename)
             
-            # Store scene data
             GENERATED_ASSETS["scenes"][scene_id] = {
                 "name": scene_name,
                 "description": scene_description,
@@ -194,11 +186,9 @@ async def generate_frame(
     character_positions: List[str] = Form(...),
     camera_angle: str = Form("medium")
 ):
-    # Get scene and character references
     scene = GENERATED_ASSETS["scenes"][scene_id]
     characters = [GENERATED_ASSETS["characters"][cid] for cid in character_ids]
     
-    # Build character prompts
     character_prompts = []
     for i, char in enumerate(characters):
         character_prompts.append(
@@ -206,7 +196,6 @@ async def generate_frame(
             f"with {character_expressions[i]} expression, positioned {character_positions[i]}"
         )
     
-    # Generate frame
     prompt = f"""
     Generate a storyboard frame for our {GENERATED_ASSETS["storyline"]["genre"]} story.
     
@@ -221,12 +210,13 @@ async def generate_frame(
     
     Art style: {GENERATED_ASSETS["storyline"]["art_style"]}
     
-    Important requirements:
+    Critical requirements:
     - Maintain exact character appearances from reference images
     - Keep scene details consistent with establishing shot
     - Ensure lighting matches scene time
     - Show the specific action clearly
     - Maintain visual continuity with previous frames
+    - High resolution and detailed
     """
     
     response = client.models.generate_content(
@@ -237,7 +227,6 @@ async def generate_frame(
         )
     )
     
-    # Save frame
     frame_id = str(uuid.uuid4())
     for part in response.candidates[0].content.parts:
         if part.inline_data is not None:
@@ -245,7 +234,6 @@ async def generate_frame(
             filename = f"static/frames/{frame_id}.png"
             image.save(filename)
             
-            # Store frame data
             frame_data = {
                 "frame_id": frame_id,
                 "description": frame_description,
@@ -271,13 +259,14 @@ async def generate_frame(
 
 @app.post("/generate_video")
 async def generate_video():
-    # Create a video prompt based on all frames
     video_prompt = f"""
     Create a 8-second video sequence based on the following storyboard frames:
     
     Story Title: {GENERATED_ASSETS["storyline"]["title"]}
     Genre: {GENERATED_ASSETS["storyline"]["genre"]}
     Theme: {GENERATED_ASSETS["storyline"]["theme"]}
+    Art Style: {GENERATED_ASSETS["storyline"]["art_style"]}
+    Camera Style: {GENERATED_ASSETS["storyline"]["camera_style"]}
     
     Scene Sequence:
     """
@@ -301,6 +290,8 @@ async def generate_video():
     - Character-specific sounds (voices, footsteps, etc.)
     - 8-second total duration
     - High quality cinematic output
+    - Include title card at beginning
+    - Include credits at end
     """
     
     # Generate video (using Veo when available)
@@ -309,20 +300,17 @@ async def generate_video():
         prompt=video_prompt,
     )
     
-    # Poll for completion
     while not operation.done:
         time.sleep(5)
         operation = client.operations.get(operation)
     
-    # Handle response
     try:
         if 'generateVideoResponse' in operation.response:
             generated_samples = operation.response['generateVideoResponse']['generatedSamples']
             for n, sample in enumerate(generated_samples):
                 video_uri = sample['video']['uri']
                 
-                # Download video
-                api_key = os.environ.get('GEMINI_API_KEY', None)
+                api_key = GEMINI_API_KEY
                 if api_key:
                     download_url = f"{video_uri}&key={api_key}"
                     response = requests.get(download_url)
@@ -354,7 +342,6 @@ async def get_story_data():
 
 @app.get("/download_report")
 async def download_report():
-    # Create a report with all prompts and assets
     report = {
         "story_metadata": GENERATED_ASSETS["storyline"],
         "characters": GENERATED_ASSETS["characters"],
